@@ -1,6 +1,36 @@
 import requests
+import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+def atualizar_pedido_simplo7(pedido_data):
+    try:
+        url = f"https://www.outletdosquadros.com.br/ws/wspedidos/{pedido_data['id']}.json"
+
+        payload = json.dumps({
+            "Wspedido": {
+                "Entrega": {
+                    "rastreamento": pedido_data["rastreamento"]
+                }
+            }
+        })
+
+        headers = {
+            'Content-Type': 'application/json',
+            'appKey': 'ZjQxYjBkZDE1YjE1MDBlNjI5NjBhOGYzY2Y2MWRlOWU='
+        }
+
+        response = requests.request("PUT", url, headers=headers, data=payload)
+        response_json = response.json()
+
+        if response.status_code == 200:
+            print(f"Pedido {pedido_data['id']} atualizado com sucesso.")
+        else:
+            print(f"Erro ao atualizar pedido {pedido_data['id']}: {response_json}")
+
+    except Exception as e:
+        print(f"Erro ao atualizar pedido {pedido_data['id']}: {str(e)}")
+
 
 def buscar_dados_da_planilha():
     try:
@@ -14,73 +44,31 @@ def buscar_dados_da_planilha():
 
         service = build('sheets', 'v4', credentials=credenciais)
         sheet = service.spreadsheets()
+
+        # Obtendo os valores de todas as colunas
         result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
         values = result.get('values', [])
 
         if not values:
             print('Não foram encontrados dados na planilha.')
-            return []
+            return
 
         # Aqui você pode manipular os dados retornados na lista 'values'
-        print(values)
+        # Suponha que os dados das colunas estejam organizados em listas dentro da lista 'values'
+        for row_data in values:
+            # Suponha que as colunas A, B e K correspondam às colunas 0, 1 e 10 na lista 'row_data'
+            pedido_data = {
+                "id": row_data[0], # Número do pedido OUTLET   
+                "rastreamento": row_data[9] # Código de rastreamento
+            }
+
+            # Atualiza o pedido no Simplo7 usando a função definida anteriormente
+            atualizar_pedido_simplo7(pedido_data)
 
     except Exception as e:
         print('Erro ao buscar os dados da planilha:', str(e))
         raise e
 
-buscar_dados_da_planilha()
 
-# def atualizar_rastreamento_pedido(pedido_id, rastreamento):
-#     try:
-#         url = f'https://{{url-loja}}/ws/wspedidos/{pedido_id}.json'
-#         headers = {
-#             'Content-Type': 'application/json',
-#             'appKey': '{{appKey}}'
-#         }
-#         data = {
-#             'Wspedido': {
-#                 'Entrega': {
-#                     'rastreamento': rastreamento
-#                 }
-#             }
-#         }
-
-#         response = requests.put(url, headers=headers, json=data)
-
-#         if response.status_code == 200:
-#             print(f'Rastreamento do pedido {pedido_id} atualizado com sucesso!')
-#         else:
-#             print(f'Erro ao atualizar o rastreamento do pedido {pedido_id}. Status code: {response.status_code}')
-#             print(response.text)
-
-#     except Exception as e:
-#         print(f'Erro ao atualizar o rastreamento do pedido {pedido_id}:', str(e))
-
-# # Função principal para executar a automação
-# def main():
-#     # Buscar os dados da planilha do Google Sheets
-#     dados_da_planilha = buscar_dados_da_planilha()
-
-#     # Iterar pelos dados e atualizar os pedidos na Simplo7
-#     for row in dados_da_planilha:
-#         pedido_id = row[0]             # Número do pedido
-#         nota_numero = row[1]           # Número da nota fiscal
-#         nota_serie = row[2]            # Série da nota fiscal
-#         nota_chave = row[3]            # Chave da nota fiscal
-#         nota_data = row[4]             # Data da nota fiscal
-#         rastreamento = row[5]          # Número de rastreamento
-
-#         pedido = {
-#             'id': pedido_id,
-#             'nota_numero': nota_numero,
-#             'nota_serie': nota_serie,
-#             'nota_chave': nota_chave,
-#             'nota_data': nota_data,
-#             'rastreamento': rastreamento
-#         }
-
-#         atualizar_rastreamento_pedido(pedido_id, rastreamento)
-
-# # Executar a função principal
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    buscar_dados_da_planilha()
