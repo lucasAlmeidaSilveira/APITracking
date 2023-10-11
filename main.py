@@ -4,39 +4,54 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 
+import time
+
 def atualizar_pedido_simplo7(pedido_data):
-    try:
-        url = (
-            f"https://www.outletdosquadros.com.br/ws/wspedidos/{pedido_data['id']}.json"
-        )
+    max_attempts = 3  # Número máximo de tentativas
+    attempt = 0
+    
+    while attempt < max_attempts:
+        try:
+            url = (
+                f"https://www.outletdosquadros.com.br/ws/wspedidos/{pedido_data['id']}.json"
+            )
 
-        payload = json.dumps(
-            {
-                "Wspedido": {
-                    "Entrega": {
-                        "rastreamento": pedido_data["rastreamento"],
-                        "url_rastreamento": "https://www.jadlog.com.br/jadlog/home",
-                    },
-                    "Status": {"id": "24"},
+            payload = json.dumps(
+                {
+                    "Wspedido": {
+                        "Entrega": {
+                            "rastreamento": pedido_data["rastreamento"],
+                            "url_rastreamento": "https://www.jadlog.com.br/jadlog/home",
+                        },
+                        "Status": {"id": "24"},
+                    }
                 }
+            )
+
+            headers = {
+                "Content-Type": "application/json",
+                "appKey": "ZjQxYjBkZDE1YjE1MDBlNjI5NjBhOGYzY2Y2MWRlOWU=",
             }
-        )
 
-        headers = {
-            "Content-Type": "application/json",
-            "appKey": "ZjQxYjBkZDE1YjE1MDBlNjI5NjBhOGYzY2Y2MWRlOWU=",
-        }
+            response = requests.request("PUT", url, headers=headers, data=payload)
+            response_json = response.json()
 
-        response = requests.request("PUT", url, headers=headers, data=payload)
-        response_json = response.json()
+            if response.status_code == 200:
+                print(f"Pedido {pedido_data['numero_pedido']} atualizado com sucesso.")
+                break  # Sai do loop se a atualização for bem-sucedida
+            else:
+                print(f"Erro ao atualizar pedido {pedido_data['numero_pedido']}: {response_json}")
+        
+        except Exception as e:
+            print(f"Erro ao atualizar pedido {pedido_data['numero_pedido']}: {str(e)}")
+        
+        attempt += 1
+        if attempt < max_attempts:
+            print(f"Tentando novamente em 10 segundos...")
+            time.sleep(10)  # Espera 10 segundos antes de tentar novamente
 
-        if response.status_code == 200:
-            print(f"Pedido {pedido_data['numero_pedido']} atualizado com sucesso.")
-        else:
-            print(f"Erro ao atualizar pedido {pedido_data['numero_pedido']}: {response_json}")
-
-    except Exception as e:
-        print(f"Erro ao atualizar pedido {pedido_data['numero_pedido']}: {str(e)}")
+    if attempt >= max_attempts:
+        print(f"Atingido o número máximo de tentativas para o pedido {pedido_data['numero_pedido']}.")
 
 
 def buscar_dados_da_planilha():
@@ -66,7 +81,7 @@ def buscar_dados_da_planilha():
 
         # Aqui você pode manipular os dados retornados na lista 'values'
         # Suponha que os dados das colunas estejam organizados em listas dentro da lista 'values'
-        for row_data in values[2199:]:
+        for row_data in values[1:]:
             if len(row_data) > 14 and row_data[4] != '' and row_data[14] != '' and 'EMITIDO' in row_data[15]:
                 id = int(row_data[4]) - 10
                 id = str(id)
