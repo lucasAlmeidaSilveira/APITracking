@@ -66,7 +66,7 @@ def buscar_dados_da_planilha():
 
         # Aqui você pode manipular os dados retornados na lista 'values'
         # Suponha que os dados das colunas estejam organizados em listas dentro da lista 'values'
-        for row_data in values[1:]:
+        for row_data in values[2199:]:
             if len(row_data) > 14 and row_data[4] != '' and row_data[14] != '' and 'EMITIDO' in row_data[15]:
                 id = int(row_data[4]) - 10
                 id = str(id)
